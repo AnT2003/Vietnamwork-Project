@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  postgres_vww:
+    image: ankane/pgvector:latest
+    container_name: vww_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: postgres
+    command: -p 5455 
+    ports:
+      - "5455:5455" 
+    volumes:
+      - pgdata_vww:/var/lib/postgresql/data
+
+  web_chatbot:
+    build: .
+    container_name: vww_flask_app
+    restart: always
+    ports:
+      # Map chuẩn xác cổng 6868 ra máy chủ
+      - "6868:6868" 
+      - "8999:8999" 
+    depends_on:
+      - postgres_vww
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+volumes:
+  pgdata_vww:
