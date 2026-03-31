@@ -1,5 +1,5 @@
 # ==========================================
-# FILE: crawl_vietnamworks.py (Chỉ lấy dữ liệu thô, BỎ hết logic làm sạch)
+# FILE: crawl_vietnamworks.py (Crawler siêu tốc - Chống trùng lặp dữ liệu)
 # ==========================================
 import requests
 import pandas as pd
@@ -87,15 +87,9 @@ def extract_job_from_json(j):
     y_val = j.get("yearsOfExperience") or 0
     exp_final = f"{y_val} năm" if int(y_val) > 0 else "Không yêu cầu"
     
-    # ==========================================
-    # CẬP NHẬT LOGIC: LẤY TỪ jobFunction
-    # ==========================================
     job_func = j.get("jobFunction") or {}
-    
-    # 1. Lấy Industry (Parent)
     industry_parent = job_func.get("parentNameVI") or job_func.get("parentName") or "Khác"
     
-    # 2. Lấy Categories (Children)
     categories_list = []
     for child in job_func.get("children", []):
         cat_name = child.get("nameVI") or child.get("name")
@@ -125,24 +119,43 @@ def extract_job_from_json(j):
         "provinces": list(set([loc for loc in locs if loc]))
     }
 
-def start_crawl(target_total=100, output_dir="data/daily"):
-    print(f"[*] BẮT ĐẦU CÀO DỮ LIỆU (Mục tiêu: {target_total} jobs, Lưu tại: {output_dir})")
+def start_crawl(target_total=100, output_dir="data/daily", existing_job_ids=None):
+    # 🟢 1. TRUY VẤN DATABASE LẤY ID CŨ (CHỐNG TRÙNG LẶP)
+    if existing_job_ids is None:
+        existing_job_ids = set()
+        try:
+            from sqlalchemy import create_engine, text
+            from config import DB_URI
+            engine = create_engine(DB_URI)
+            with engine.connect() as conn:
+                res = conn.execute(text("SELECT CAST(job_id AS VARCHAR) FROM dwh.dim_job_details"))
+                existing_job_ids = set(row[0] for row in res.fetchall())
+            print(f"[*] Đã nạp {len(existing_job_ids)} Job ID từ Database để đối chiếu trùng lặp.")
+        except Exception:
+            print("[*] Không tìm thấy Database (Bỏ qua check trùng, cào từ đầu).")
+
+    print(f"[*] BẮT ĐẦU LÙNG SỤC (Mục tiêu: Tìm đúng {target_total} jobs MỚI, Lưu tại: {output_dir})")
     
     fact_postings, dim_details, dim_companies, dim_industries = [], [], [], []
     dim_locations, dim_skills, dim_categories = [], [], [] 
     
     current_page = 0
-    total_scraped = 0
+    total_new_scraped = 0
+    consecutive_empty_pages = 0
     
-    while total_scraped < target_total:
+    # 🟢 2. TỐI ƯU TỐC ĐỘ: Dùng Session giữ nguyên kết nối (Nhanh gấp rưỡi)
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    
+    while total_new_scraped < target_total:
         try:
             payload = {
-                "userId": 7574593,
+                "userId": 0, # Xóa cứng ID user để tránh lỗi phân quyền
                 "query": "",
                 "filter": [],
                 "ranges": [],
                 "order": [{"field": "approvedOn", "value": "desc"}],
-                "hitsPerPage": 50,
+                "hitsPerPage": 100, # Tăng max công suất 100 job/trang
                 "page": current_page,
                 "retrieveFields": [
                     "address", "benefits", "jobTitle", "salaryMax", "isSalaryVisible", 
@@ -159,27 +172,49 @@ def start_crawl(target_total=100, output_dir="data/daily"):
                 "summaryVersion": ""
             }
             
-            res = requests.post(API_SEARCH_URL, headers=HEADERS, json=payload, timeout=10, verify=False)
+            res = session.post(API_SEARCH_URL, json=payload, timeout=15, verify=False)
             api_jobs = res.json().get('data', [])
-            if not api_jobs: break
+            
+            # 🟢 3. LOGIC THOÁT KHỎI VÒNG LẶP: Cạn kiệt Job trên web
+            if not api_jobs: 
+                consecutive_empty_pages += 1
+                if consecutive_empty_pages >= 2:
+                    print("\n[!] CẢNH BÁO: Đã quét đến ranh giới cuối cùng của VietnamWorks.")
+                    print(f"[!] Dừng lại. Tổng cộng chỉ thu thập được {total_new_scraped} job mới.")
+                    break
+                current_page += 1
+                continue
+                
+            consecutive_empty_pages = 0
+            
         except Exception as e: 
-            print(f"Lỗi gọi API: {e}")
-            break
+            print(f"⚠️ Lỗi mạng ở trang {current_page}: {e}. Đang thử lại...")
+            time.sleep(2)
+            continue
 
+        skipped_in_page = 0
+        
         for j in api_jobs:
-            if total_scraped >= target_total: break
+            if total_new_scraped >= target_total: break
             
-            print(f"   🔄 [{total_scraped+1}/{target_total}] Đang cào Job ID: {j.get('jobId', 'Unknown')} ...")
+            jid = str(j.get("jobId", ""))
             
+            # 🟢 KIỂM TRA TRÙNG LẶP CỰC NHANH
+            if not jid or jid in existing_job_ids:
+                skipped_in_page += 1
+                continue 
+
             d = extract_job_from_json(j)
             
             if d:
-                jid = d['job_id']
+                # Ghi nhận ID vào bộ nhớ để không cào trùng chính nó trong cùng 1 đợt
+                existing_job_ids.add(d['job_id']) 
+                
                 cid = id_gen.get_id("company", d['company'])
                 iid = id_gen.get_id("industry", d['industry'])
                 
-                fact_postings.append({"job_id": jid, "company_id": cid, "industry_id": iid, "crawled_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
-                dim_details.append({"job_id": jid, "job_title": d['title'], "job_url": d['job_url'], "salary_text": d['salary'], "job_level": d['level'], "view_count": 0, "posted_date": d['posted_date'], "expiry_date": d['expired_date'], "years_of_experience": d['exp'], "job_description": d['description'], "job_requirements": d['requirements'], "job_benefits": d['benefits']})
+                fact_postings.append({"job_id": d['job_id'], "company_id": cid, "industry_id": iid, "crawled_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+                dim_details.append({"job_id": d['job_id'], "job_title": d['title'], "job_url": d['job_url'], "salary_text": d['salary'], "job_level": d['level'], "view_count": 0, "posted_date": d['posted_date'], "expiry_date": d['expired_date'], "years_of_experience": d['exp'], "job_description": d['description'], "job_requirements": d['requirements'], "job_benefits": d['benefits']})
                 
                 if not any(c['company_id'] == cid for c in dim_companies):
                     dim_companies.append({"company_id": cid, "company_name": d['company'], "description": d['comp_desc'], "logo_url": d['logo'], "profile_url": d['profile_url']})
@@ -187,14 +222,20 @@ def start_crawl(target_total=100, output_dir="data/daily"):
                 if iid and not any(i['industry_id'] == iid for i in dim_industries):
                     dim_industries.append({"industry_id": iid, "industry_name": d['industry']})
                 
-                for prov in d['provinces']: dim_locations.append({"job_id": jid, "location_name": prov})
-                for sk in d['skills']: dim_skills.append({"job_id": jid, "skill_name": sk})
-                for cat in d['categories']: dim_categories.append({"job_id": jid, "category_name": cat})
+                for prov in d['provinces']: dim_locations.append({"job_id": d['job_id'], "location_name": prov})
+                for sk in d['skills']: dim_skills.append({"job_id": d['job_id'], "skill_name": sk})
+                for cat in d['categories']: dim_categories.append({"job_id": d['job_id'], "category_name": cat})
                 
-                total_scraped += 1
-                
+                total_new_scraped += 1
+                if total_new_scraped % 10 == 0 or total_new_scraped == target_total:
+                    print(f"   ✅ Đã thu thập {total_new_scraped}/{target_total} Job MỚI...")
+        
+        if skipped_in_page > 0:
+            print(f"   ⏩ Trang {current_page}: Tự động lướt qua {skipped_in_page} Jobs đã trùng lặp.")
+            
         current_page += 1
 
+    # Lưu file CSV (Thậm chí nếu total_new_scraped = 0 thì vẫn sinh file rỗng để Pipeline không bị gãy)
     pd.DataFrame(fact_postings).to_csv(os.path.join(output_dir, "fact_job_postings.csv"), index=False, encoding="utf-8-sig")
     pd.DataFrame(dim_details).to_csv(os.path.join(output_dir, "dim_job_details.csv"), index=False, encoding="utf-8-sig")
     pd.DataFrame(dim_companies).to_csv(os.path.join(output_dir, "dim_companies.csv"), index=False, encoding="utf-8-sig")
@@ -203,5 +244,4 @@ def start_crawl(target_total=100, output_dir="data/daily"):
     pd.DataFrame(dim_skills).to_csv(os.path.join(output_dir, "dim_skills.csv"), index=False, encoding="utf-8-sig")
     pd.DataFrame(dim_categories).to_csv(os.path.join(output_dir, "dim_categories.csv"), index=False, encoding="utf-8-sig")
     
-    print(f"[*] HOÀN TẤT! Đã lưu {total_scraped} jobs vào thư mục {output_dir}.")
-    
+    print(f"[*] HOÀN TẤT! Đã đóng gói thành công {total_new_scraped} jobs mới tinh vào thư mục {output_dir}.")
