@@ -3,45 +3,53 @@
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791.svg)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED.svg)
+![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-2.8.1-017CEE.svg)
 ![Flask](https://img.shields.io/badge/Flask-Web%20App-000000.svg)
 ![Ollama](https://img.shields.io/badge/AI-Ollama%20LLM-white.svg)
 
-Hệ thống **AI Headhunter** thông minh kết hợp **Data Engineering Pipeline** toàn diện. Dự án tự động thu thập dữ liệu việc làm từ VietnamWorks, xử lý ETL/ELT, lưu trữ vào Data Warehouse & Vector Database, đồng thời ứng dụng công nghệ **RAG (Retrieval-Augmented Generation)** kết hợp **Hybrid Search** để phân tích CV và tư vấn công việc tối ưu nhất cho ứng viên.
+Hệ thống **AI Headhunter** thông minh kết hợp **Data Engineering Pipeline** toàn diện (End-to-End). Dự án giải quyết bài toán từ khâu tự động thu thập dữ liệu việc làm trên thị trường, xử lý chuẩn hóa ETL/ELT, xây dựng mô hình dữ liệu tối ưu trong Data Warehouse, cho đến việc ứng dụng công nghệ **RAG (Retrieval-Augmented Generation)** kết hợp **Hybrid Search** để phân tích CV và tư vấn định hướng nghề nghiệp cho ứng viên.
 
 ---
 
 ## 🌟 Tính năng nổi bật (Key Features)
 
-- **🔄 Automated Data Pipeline (ETL/ELT):** Xây dựng luồng xử lý dữ liệu tự động từ khâu thu thập (Crawler), làm sạch (Clean), chuẩn hóa và nạp vào Data Warehouse (PostgreSQL) qua các phân lớp: `Staging` -> `DWH` -> `Vector DWH`. Thiết kế theo mô hình dữ liệu chuẩn (Star Schema).
+- **🔄 Automated Data Pipeline (ETL/ELT):** Vận hành luồng xử lý dữ liệu hoàn toàn tự động từ khâu thu thập (Crawler), làm sạch (Clean) và nạp vào kho dữ liệu qua các phân lớp: `Raw` -> `Staging` -> `Data Warehouse` -> `Vector DWH`. 
+- **🛡️ Data Quality Framework:** Tích hợp bộ quy tắc kiểm định dữ liệu nghiêm ngặt (Data Validation) ngay trong Pipeline để bắt lỗi dữ liệu rác (Khóa chính NULL, mức lương âm, trùng lặp ID, vi phạm logic ngày tháng) trước khi nạp vào DWH.
 - **🧠 AI Vectorization:** Ứng dụng mô hình `SentenceTransformers` (`keepitreal/vietnamese-sbert`) để nhúng (embed) các mô tả công việc thành vector đa chiều, tối ưu hóa đặc biệt cho ngữ nghĩa tiếng Việt.
-- **🔍 Hybrid Search (RRF):** Kết hợp sức mạnh của tìm kiếm ngữ nghĩa (Semantic/Vector Search) và tìm kiếm từ khóa (Lexical Search). Áp dụng thuật toán **Reciprocal Rank Fusion (RRF)** giúp truy xuất công việc chuẩn xác dựa trên Intent (ý định) của người dùng.
-- **📄 CV Parsing & RAG LLM:** Tự động trích xuất thông tin từ CV (PDF). Tích hợp LLM (`gpt-oss:120b-cloud` qua Ollama) để đối chiếu, so sánh điểm mạnh/yếu của ứng viên với từng vị trí công việc. Hệ thống có khả năng tự động render định dạng HTML Table cho bảng so sánh đẹp mắt.
-- **💻 Modern Web Interface:** Giao diện Dashboard thống kê trực quan và hệ thống Chatbot AI mượt mà, xử lý hiển thị Markdown và HTML Table thời gian thực.
+- **🔍 Hybrid Search (RRF):** Kết hợp sức mạnh của tìm kiếm ngữ nghĩa (Semantic/Vector Search) và tìm kiếm từ khóa (Lexical Search) bằng thuật toán **Reciprocal Rank Fusion (RRF)**, giúp truy xuất công việc chuẩn xác theo Intent của người dùng.
+- **📄 CV Parsing & RAG LLM:** Tự động trích xuất thông tin từ CV (PDF). Tích hợp LLM (`gpt-oss:120b-cloud` qua Ollama) để đối chiếu, so sánh điểm mạnh/yếu của ứng viên với từng vị trí công việc và tự động render định dạng HTML Table.
+- **⏰ Tự động hóa với Airflow:** Lập lịch Delta Load hằng ngày, đảm bảo dữ liệu thị trường luôn được cập nhật mới nhất mà không cần can thiệp thủ công.
+
+---
+
+## 📊 Nguồn dữ liệu & Mô hình dữ liệu (Data Modeling)
+
+### 1. Giới thiệu Dữ liệu (Data Introduction)
+Dữ liệu được thu thập trực tiếp từ nền tảng VietnamWorks, tập trung vào các thông tin cốt lõi của thị trường lao động:
+* **Thông tin công việc:** Tiêu đề, cấp bậc, mức lương, địa điểm, ngành nghề.
+* **Yêu cầu & Quyền lợi:** Kỹ năng cốt lõi (Skills), số năm kinh nghiệm, mô tả chi tiết (JD), phúc lợi.
+* **Thông tin doanh nghiệp:** Tên công ty, quy mô, địa chỉ.
+
+### 2. Mô hình dữ liệu (Star Schema)
+Để tối ưu hóa cho các truy vấn phân tích trên Dashboard và tìm kiếm AI, kho dữ liệu (DWH) được thiết kế theo kiến trúc **Star Schema** kinh điển, bao gồm:
+* **`fact_job_postings`:** Bảng sự kiện trung tâm, lưu trữ các transaction đăng tuyển (job_id, company_id, date_keys).
+* **`dim_job_details`:** Bảng chiều lưu trữ các thuộc tính chi tiết của công việc (salary, level, requirements, benefits).
+* **`dim_companies`:** Bảng chiều quản lý thông tin định danh của nhà tuyển dụng.
+* **`vector_dwh.dim_job_vectors`:** Phân vùng đặc biệt sử dụng extension `pgvector` để lưu trữ dữ liệu đã mã hóa (Embeddings) phục vụ cho truy vấn Semantic Search.
 
 ---
 
 ## 🛠️ Công nghệ sử dụng (Tech Stack)
 
-### 1. Data Engineering & Database
-- **Data Pipeline:** Python, Pandas, SQLAlchemy, psycopg2.
-- **Database:** PostgreSQL (tích hợp extension `pgvector` cho Vector Storage).
-- **Data Architecture:** Data Warehouse, Data Modeling.
-
-### 2. AI & Machine Learning
-- **Embedding Model:** `sentence-transformers` (Vietnamese SBERT).
-- **LLM Engine:** Ollama API (`gpt-oss:120b-cloud`).
-- **NLP & Xử lý văn bản:** Pyvi (Vietnamese Tokenizer), PyPDF2, Regex (Auto-fix HTML/Markdown Tables).
-
-### 3. Backend & Frontend
-- **Backend:** Python / Flask.
-- **Frontend:** HTML5, TailwindCSS, FontAwesome, `marked.js` (dịch Markdown siêu tốc trên Client-side).
-
-### 4. DevOps & Deployment
-- **Containerization:** Docker & Docker Compose.
+* **Data Engineering:** Python, Pandas, SQLAlchemy, psycopg2, Apache Airflow.
+* **Database:** PostgreSQL (tích hợp `pgvector`).
+* **AI & NLP:** `sentence-transformers`, Ollama API, Pyvi, PyPDF2.
+* **Backend & Frontend:** Flask, HTML5, TailwindCSS, Chart.js.
+* **DevOps:** Docker, Docker Compose, Bash Script.
 
 ---
 
-## 📂 Kiến trúc hệ thống (System Architecture)
+## 📂 Kiến trúc hệ thống & Cấu trúc thư mục
 
 ```text
 [VietnamWorks Website] --(Crawler)--> [Raw CSVs] 
@@ -65,7 +73,6 @@ Hệ thống **AI Headhunter** thông minh kết hợp **Data Engineering Pipeli
                                   [Ollama LLM (RAG)]---------------+
                                           |
                               [Personalized AI Response]
-```
 
 ---
 
@@ -73,30 +80,24 @@ Hệ thống **AI Headhunter** thông minh kết hợp **Data Engineering Pipeli
 
 ```text
 Vietnamworks_Project/
-│
-├── core_engine/              # Lõi xử lý AI và Data Access
-│   ├── ai_engine.py          # Logic Hybrid Search, Vector Embedding, LLM RAG
-│   └── dashboard_engine.py   # Xử lý truy xuất dữ liệu cho Dashboard
-│
-├── dags/                     # Data Pipeline & ETL Scripts
+├── core_engine/              # Lõi xử lý AI (Hybrid Search, LLM RAG) và Data Access
+├── dags/                     # Thư mục chứa các luồng Apache Airflow
 │   ├── scripts/
-│   │   ├── ai_tasks.py       # Tác vụ NLP & Vectorization (Sinh và nạp Vector)
+│   │   ├── ai_tasks.py       # Tác vụ NLP & Vectorization
 │   │   ├── crawl_vietnamworks.py # Crawler thu thập data gốc
-│   │   ├── sql_queries.py    # Chứa các câu lệnh SQL (DDL/DML)
+│   │   ├── sql_queries.py    # DDL/DML Queries
 │   │   └── logger.py         # Ghi log tiến trình Pipeline
-│   └── initial_load.py       # Script khởi chạy toàn bộ chu trình ETL (End-to-End)
-│
-├── data/raw/                 # Không gian lưu trữ dữ liệu thô (Raw CSV)
-├── sql/                      # Chứa script khởi tạo Data Warehouse (setup_database.sql)
-├── templates/                # Giao diện Frontend (HTML/TailwindCSS)
-│   ├── chat.html             # Giao diện hệ thống AI Headhunter
-│   └── dashboard.html        # Giao diện thống kê thị trường
-│
-├── app.py                    # Điểm đầu vào của Web App (Flask Routing, API & Auto-Fix HTML)
-├── config.py                 # File cấu hình biến môi trường, Database URI, LLM Models
-├── docker-compose.yml        # Cấu hình dịch vụ Docker (App, Postgres)
-├── Dockerfile                # Cấu hình build image cho môi trường Python
-└── requirements.txt          # Danh sách thư viện phụ thuộc
+│   ├── initial_load.py       # Script nạp dữ liệu khổng lồ lần đầu (Full Load)
+│   ├── master_pipeline.py    # Script ETL cập nhật dữ liệu hằng ngày (Delta Load)
+│   └── daily_scheduler.py    # Cấu hình DAG cho Airflow
+├── sql/                      # Script khởi tạo Database Schema
+├── templates/                # Giao diện Web (Dashboard & Chat)
+├── app.py                    # Flask Web App Server
+├── config.py                 # File cấu hình biến môi trường
+├── docker-compose.yml        # Cấu hình Docker Services
+├── Dockerfile                # Image Build File
+├── requirements.txt          # Thư viện phụ thuộc
+└── start.sh                  # Kịch bản khởi động tự động (Airflow + Flask)
 ```
 
 ---
@@ -105,19 +106,20 @@ Vietnamworks_Project/
 
 ### Yêu cầu hệ thống (Prerequisites)
 - Đã cài đặt [Docker](https://www.docker.com/) và Docker Compose.
+- Lưu ý quan trọng: Đảm bảo Docker Desktop đã được mở và biểu tượng cá voi ở dưới thanh taskbar đang báo "Engine running"
 - Môi trường cấp phát RAM tối thiểu 4GB-8GB cho Docker.
-- API Key của Ollama (Nếu dùng LLM Cloud) hoặc cài đặt Ollama Local.
+- Tạo tài khoản và lấy API Key của Ollama để dùng LLM Cloud tại: https://ollama.com/settings/keys
 
 ### Bước 1: Clone Repository
 ```bash
-git clone [https://github.com/your-username/Vietnamworks_Project.git](https://github.com/your-username/Vietnamworks_Project.git)
+git clone [https://github.com/AnT2003/Vietnamwork-Project.git](https://github.com/AnT2003/Vietnamwork-Project.git)
 cd Vietnamworks_Project
 ```
 
 ### Bước 2: Cấu hình biến môi trường
 Tạo file `.env` ở thư mục gốc của dự án và điền các thông tin sau:
 ```env
-DB_URI=postgresql://user:password@postgres_db:5432/vietnamworks_db
+DB_URI=postgresql://postgres:password123@vww_postgres_db:5455/postgres
 OLLAMA_API_KEY=your_api_key_here
 ```
 
@@ -128,13 +130,33 @@ docker-compose up --build -d
 ```
 
 ### Bước 4: Khởi tạo dữ liệu (Initial Load)
-Chạy lệnh sau để kích hoạt toàn bộ luồng Big Data Pipeline (Crawler -> ETL -> NLP Transform -> Vectorization):
+Chạy lệnh sau để kích hoạt toàn bộ luồng Big Data Pipeline (Crawler -> ETL -> validation -> NLP Transform -> Vectorization):
 ```bash
 docker exec -it vww_flask_app python dags/initial_load.py
 ```
 *(Lưu ý: Quá trình này sẽ mất một khoảng thời gian tùy thuộc vào số lượng Jobs được thu thập và tốc độ nhúng Vector của hệ thống phần cứng).*
 
 ---
+
+### Bước 5: Khởi động pipeline nạp thêm 100 dữ liệu hàng ngày bằng lệnh
+Chạy lệnh sau để kích hoạt toàn bộ luồng ETL Pipeline nạp thêm data (Crawler -> ETL ->validation -> NLP Transform -> Vectorization):
+```bash
+docker exec -it vww_flask_app python dags/master_pipeline.py
+```
+*(Lưu ý: Quá trình này sẽ mất một khoảng thời gian tùy thuộc vào số lượng Jobs được thu thập và tốc độ nhúng Vector của hệ thống phần cứng).*
+
+---
+
+## ⏰ Hướng dẫn cấu hình Lập lịch tự động (Apache Airflow Scheduler)
+
+1. Mở trình duyệt và truy cập hệ thống quản trị Airflow tại: `http://localhost:8999`
+2. Đăng nhập với tài khoản được tự động tạo sẵn:
+- Username: admin
+- Password: admin
+3. Tại giao diện chính (Tab DAGs), tìm dòng vietnamworks_daily_pipeline
+4. Gạt nút công tắc ở cột ngoài cùng bên trái từ Pause (Trắng) sang Unpause (Xanh dương/ON).
+5. Cách hoạt động: Vào đúng 22:00 hằng ngày, Airflow sẽ tự động bóp cò gọi file master_pipeline.py. File này sẽ cào 100 Job mới nhất, chạy qua bộ phận Data Quality Checks, từ chối nạp dữ liệu rác, và chỉ Vector hóa những Job chưa từng tồn tại trong hệ thống.
+
 
 ## 🎯 Hướng dẫn Sử dụng (Usage)
 
@@ -160,6 +182,5 @@ docker exec -it vww_flask_app python dags/initial_load.py
 ## 👨‍💻 Tác giả (Author)
 
 **[Thái Bảo An]** *Data Engineer*
-- 🌐 **Portfolio / GitHub:** [Link GitHub của bạn]
 
 *Nếu bạn thấy dự án này thú vị và hữu ích, đừng quên để lại 1 ⭐️ cho repository nhé!*
