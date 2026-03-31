@@ -65,6 +65,9 @@
     <div class="flex w-full">
         <aside class="sidebar">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 mt-2">Data Filters</h3>
+            
+            <div class="filter-group"><label class="filter-label">Location</label><select id="fLoc" class="filter-control">{% for loc in locations %}<option value="{{ loc }}">{{ loc }}</option>{% endfor %}</select></div>
+            
             <div class="filter-group"><label class="filter-label">Industry</label><select id="fInd" class="filter-control">{% for i in industries %}<option value="{{ i }}">{{ i }}</option>{% endfor %}</select></div>
             <div class="filter-group"><label class="filter-label">Category</label><select id="fCat" class="filter-control">{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></div>
             <div class="filter-group"><label class="filter-label">Level</label><select id="fLvl" class="filter-control">{% for l in levels %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
@@ -168,7 +171,9 @@
         async function init() {
             document.getElementById('loading-overlay').classList.remove('hidden');
             
+            // 🟢 THÊM THUỘC TÍNH LOCATION VÀO PARAMS GỬI LÊN SERVER
             const params = new URLSearchParams({
+                location: document.getElementById('fLoc').value,
                 industry: document.getElementById('fInd').value,
                 category: document.getElementById('fCat').value,
                 level: document.getElementById('fLvl').value
@@ -182,7 +187,6 @@
                 document.getElementById('kJobs').innerText = data.kpi.total_jobs;
                 document.getElementById('kComp').innerText = data.kpi.total_companies;
                 document.getElementById('kSal').innerText = data.kpi.avg_salary;
-                // 🟢 ĐÃ THAY ĐỔI: GÁN DỮ LIỆU avg_exp CHO id="kExp"
                 document.getElementById('kExp').innerText = data.kpi.avg_exp;
 
                 // 1. LOCATION
@@ -194,7 +198,7 @@
 
                 // 2. LEVELS
                 renderChartSafe('cLevels', data.pie_levels && data.pie_levels.labels.length > 0, {
-                    type: 'doughnut', data: { labels: data.pie_levels.labels, datasets: [{ data: data.pie_levels.data, backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b'] }] }
+                    type: 'doughnut', data: { labels: data.pie_levels.labels, datasets: [{ data: data.pie_levels.data, backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b','#be4b9e'] }] }
                 }, 'noDataLevels');
 
                 // 3. COMPANIES
@@ -309,7 +313,6 @@
                                             return orig.industry || 'Chi tiết Lĩnh vực';
                                         },
                                         label: (ctx) => {
-                                            // 🟢 BẮT TRỰC TIẾP TỪ DỮ LIỆU GỐC, KHÔNG DÙNG BIẾN ẢO CỦA CHART.JS NỮA
                                             const raw = ctx.raw;
                                             const orig = (raw && raw._data && Array.isArray(raw._data)) ? raw._data[0] : (raw._data || {});
                                             const catName = orig.category || 'Chi tiết';
