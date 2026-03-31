@@ -32,6 +32,5 @@ with DAG(
         # Trỏ đúng đường dẫn tuyệt đối bên trong Docker container
         bash_command='python /app/dags/master_pipeline.py', 
     )
-
-    # Nếu có nhiều task, bạn dùng toán tử >> để xếp thứ tự. Ở đây chỉ có 1 task nên gọi thẳng:
+    # gọi thẳng task:
     run_daily_etl
