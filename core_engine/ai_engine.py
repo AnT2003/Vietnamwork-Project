@@ -13,12 +13,17 @@ from config import DB_URI
 EMBEDDING_MODEL_NAME = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
 CLOUD_LLM_MODEL = 'gpt-oss:120b-cloud'
 
-@st.cache_resource
-def load_embedding_model():
-    return SentenceTransformer(EMBEDDING_MODEL_NAME)
+# 🟢 TUYỆT CHIÊU EAGER LOAD: Tải sẵn mô hình ngay khi khởi động app
+print("🚀 Đang nạp sẵn AI Model vào bộ nhớ (Sẽ mất chút thời gian lúc bật web)...")
+embed_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+print("✅ AI Model đã sẵn sàng! Tìm kiếm sẽ siêu tốc!")
 
-embed_model = load_embedding_model()
 engine = create_engine(DB_URI)
+
+@st.cache_resource
+def get_embedding(text):
+    # Gọi thẳng model đã được load sẵn ở trên
+    return embed_model.encode(text)
 
 def nlp_transform_text(text_input):
     if not text_input: return ""
@@ -56,7 +61,8 @@ def fetch_and_rank_jobs(user_query, cv_text, top_k=10):
     # 2. Xây dựng Vector Search
     search_query = f"{job_kw} {user_query}"
     if cv_text: search_query += f" {' '.join(cv_text[:500].split())}"
-    query_vector = embed_model.encode(nlp_transform_text(search_query)).tolist()
+    
+    query_vector = get_embedding(nlp_transform_text(search_query)).tolist()
     vector_str = "[" + ",".join(map(str, query_vector)) + "]"
     
     # Hàm sinh SQL động (Hybrid Retrieval: Vector + Keyword)
@@ -64,7 +70,7 @@ def fetch_and_rank_jobs(user_query, cv_text, top_k=10):
         where_clauses = ["1=1"]
         params = {"query_vector": vector_str}
         
-        # SQL LỌC ĐỊA ĐIỂM: Chống lỗi "hn" bắt nhầm "tnhh" bằng Regex \b
+        # SQL LỌC ĐỊA ĐIỂM
         if use_location and target_synonyms:
             loc_conditions = []
             for i, syn in enumerate(target_synonyms):
@@ -77,7 +83,7 @@ def fetch_and_rank_jobs(user_query, cv_text, top_k=10):
 
         where_str = " AND ".join(where_clauses)
         
-        # SQL LỌC TỪ KHÓA BẮT BUỘC: Ép Database tìm chính xác các từ cấu thành chức danh
+        # SQL LỌC TỪ KHÓA BẮT BUỘC
         kw_sql = ""
         if job_kw:
             job_words = [w for w in job_kw.split() if len(w) > 0]
@@ -143,11 +149,9 @@ def fetch_and_rank_jobs(user_query, cv_text, top_k=10):
         chunk = str(row['chunk_text']).lower()
         score = 0
         
-        # Tuyệt đối ưu tiên job chứa nguyên cụm chức danh
         if job_kw and job_kw in title: score += 10000
         elif job_kw and job_kw in chunk: score += 1000
         
-        # Ưu tiên các job chứa ĐẦY ĐỦ các từ khóa ghép lại (Bất kể vị trí)
         if job_words:
             match_all_title = True
             for w in job_words:
@@ -157,7 +161,6 @@ def fetch_and_rank_jobs(user_query, cv_text, top_k=10):
                     if w not in title: match_all_title = False; break
             if match_all_title: score += 5000
         
-        # Chấm điểm từ khóa phụ
         for kw in query_keywords:
             if len(kw) <= 3:
                 if re.search(rf'\b{re.escape(kw)}\b', title): score += 100
