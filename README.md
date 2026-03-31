@@ -182,7 +182,6 @@ docker exec -it vww_flask_app python dags/master_pipeline.py
 
 ## 🔮 Hướng phát triển tương lai (Future Enhancements)
 
-- [ ] Tích hợp **Apache Airflow** để lập lịch (Scheduling) và giám sát luồng dữ liệu tự động hàng ngày thay vì chạy script thủ công.
 - [ ] Mở rộng Data Lake trên nền tảng Cloud (GCP/AWS) để xử lý lượng dữ liệu lớn hơn.
 - [ ] Kết nối thêm các nguồn dữ liệu từ nền tảng khác để làm phong phú Data Warehouse.
 - [ ] Phát triển tính năng Agentic AI tự động sinh Cover Letter dựa trên Job Description.
