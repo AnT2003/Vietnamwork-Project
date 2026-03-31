@@ -1,0 +1,81 @@
+# Chứa API Key của Ollama, thông tin đăng nhập Database
+.env
+.env.*
+secrets/
+*.pem
+*.key
+
+# Không đẩy các file CSV hàng trăm MB do Crawler tải về
+data/
+*.csv
+*.xlsx
+*.parquet
+
+# File PDF CV người dùng upload lên lúc chat
+*.pdf
+
+# Thư mục chứa dữ liệu vật lý của PostgreSQL (Docker Volume bind mount)
+pgdata_vww/
+pgdata/
+*.db
+*.sqlite3
+
+
+# Log của Flask app và Crawler
+logs/
+*.log
+
+# Các file chạy ngầm và log của Airflow
+airflow/logs/
+airflow/airflow-webserver.pid
+airflow/airflow.db
+airflow/standalone_admin_password.txt
+
+# Rác biên dịch của Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Môi trường ảo (Chỉ cần push file requirements.txt là đủ)
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Các thư mục build và phân phối thư viện
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.swp
+*.swo
+
+# Hệ điều hành MacOS / Windows
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
