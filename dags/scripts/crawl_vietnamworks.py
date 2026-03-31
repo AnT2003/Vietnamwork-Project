@@ -133,7 +133,6 @@ def extract_job_from_json(j):
         "logo": j.get("companyLogo", ""),
         "job_url": final_job_url,
         "profile_url": f"{BASE_URL}/nha-tuyen-dung/c{j.get('companyId')}" if j.get("companyId") else "",
-        "views": 0,
         "skills": skills,
         "provinces": list(set([loc for loc in locs if loc]))
     }
@@ -245,7 +244,7 @@ def start_crawl(target_total=100, output_dir="data/daily", existing_job_ids=None
                 
                 # Phân rã dữ liệu (Data Normalization) vào các bảng tương ứng
                 fact_postings.append({"job_id": d['job_id'], "company_id": cid, "industry_id": iid, "crawled_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
-                dim_details.append({"job_id": d['job_id'], "job_title": d['title'], "job_url": d['job_url'], "salary_text": d['salary'], "job_level": d['level'], "view_count": 0, "posted_date": d['posted_date'], "expiry_date": d['expired_date'], "years_of_experience": d['exp'], "job_description": d['description'], "job_requirements": d['requirements'], "job_benefits": d['benefits']})
+                dim_details.append({"job_id": d['job_id'], "job_title": d['title'], "job_url": d['job_url'], "salary_text": d['salary'], "job_level": d['level'], "posted_date": d['posted_date'], "expiry_date": d['expired_date'], "years_of_experience": d['exp'], "job_description": d['description'], "job_requirements": d['requirements'], "job_benefits": d['benefits']})
                 
                 if not any(c['company_id'] == cid for c in dim_companies):
                     dim_companies.append({"company_id": cid, "company_name": d['company'], "description": d['comp_desc'], "logo_url": d['logo'], "profile_url": d['profile_url']})
