@@ -25,6 +25,7 @@
         .filter-control:focus { border-color: #2563eb; }
         
         .card { background: #ffffff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; height: 320px; display: flex; flex-direction: column; overflow: hidden; margin-bottom: 16px; position: relative; }
+        .card-auto { height: auto; } /* Card có chiều cao tự do cho bảng Data */
         .kpi-card { background: #ffffff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; }
         
         .chart-box { flex-grow: 1; position: relative; width: 100%; min-height: 0; overflow: hidden; }
@@ -38,6 +39,15 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .no-data-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.9rem; font-weight: 500; z-index: 10; display: none; }
+
+        /* 🟢 CSS CHO BẢNG DỮ LIỆU CUỘN */
+        .table-container { width: 100%; max-height: 450px; overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .data-table th { position: sticky; top: 0; background: #f8fafc; padding: 12px 16px; font-weight: 700; color: #475569; border-bottom: 1px solid #cbd5e1; z-index: 10; }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+        .data-table tr:hover td { background-color: #f8fafc; }
+        /* CSS tự động cắt chữ nếu đoạn văn quá dài (chỉ hiện 3 dòng) */
+        .text-wrap-cell { max-width: 250px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -65,9 +75,7 @@
     <div class="flex w-full">
         <aside class="sidebar">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 mt-2">Data Filters</h3>
-            
             <div class="filter-group"><label class="filter-label">Location</label><select id="fLoc" class="filter-control">{% for loc in locations %}<option value="{{ loc }}">{{ loc }}</option>{% endfor %}</select></div>
-            
             <div class="filter-group"><label class="filter-label">Industry</label><select id="fInd" class="filter-control">{% for i in industries %}<option value="{{ i }}">{{ i }}</option>{% endfor %}</select></div>
             <div class="filter-group"><label class="filter-label">Category</label><select id="fCat" class="filter-control">{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></div>
             <div class="filter-group"><label class="filter-label">Level</label><select id="fLvl" class="filter-control">{% for l in levels %}<option value="{{ l }}">{{ l }}</option>{% endfor %}</select></div>
@@ -81,67 +89,50 @@
                 <div class="kpi-card border-l-4 border-rose-500"><div><div class="kpi-label">Total Jobs</div><div class="kpi-value text-rose-600" id="kJobs">--</div></div><div class="kpi-icon bg-rose-100 text-rose-600"><i class="fas fa-briefcase"></i></div></div>
                 <div class="kpi-card border-l-4 border-amber-500"><div><div class="kpi-label">Companies</div><div class="kpi-value text-amber-600" id="kComp">--</div></div><div class="kpi-icon bg-amber-100 text-amber-600"><i class="fas fa-building"></i></div></div>
                 <div class="kpi-card border-l-4 border-emerald-500"><div><div class="kpi-label">Avg Salary</div><div class="kpi-value text-emerald-600" id="kSal">--</div></div><div class="kpi-icon bg-emerald-100 text-emerald-600"><i class="fas fa-money-bill-wave"></i></div></div>
-                
-                <div class="kpi-card border-l-4 border-blue-500">
-                    <div>
-                        <div class="kpi-label">Avg Experience</div>
-                        <div class="kpi-value text-blue-600 text-xl" id="kExp">--</div>
-                    </div>
-                    <div class="kpi-icon bg-blue-100 text-blue-600"><i class="fas fa-user-clock"></i></div>
-                </div>
+                <div class="kpi-card border-l-4 border-blue-500"><div><div class="kpi-label">Avg Experience</div><div class="kpi-value text-blue-600 text-xl" id="kExp">--</div></div><div class="kpi-icon bg-blue-100 text-blue-600"><i class="fas fa-user-clock"></i></div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-map-marker-alt text-rose-500 mr-2"></i> Top 5 Locations</h3>
-                    <div class="chart-box"><canvas id="cLocs"></canvas></div>
-                    <div id="noDataLocs" class="no-data-msg">No location data available</div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-layer-group text-purple-500 mr-2"></i> Level Distribution</h3>
-                    <div class="chart-box"><canvas id="cLevels"></canvas></div>
-                    <div id="noDataLevels" class="no-data-msg">No level data available</div>
-                </div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-map-marker-alt text-rose-500 mr-2"></i> Top 5 Locations</h3><div class="chart-box"><canvas id="cLocs"></canvas></div><div id="noDataLocs" class="no-data-msg">No location data available</div></div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-layer-group text-purple-500 mr-2"></i> Level Distribution</h3><div class="chart-box"><canvas id="cLevels"></canvas></div><div id="noDataLevels" class="no-data-msg">No level data available</div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-building text-amber-500 mr-2"></i> Top 10 Companies</h3>
-                    <div class="chart-box"><canvas id="cComps"></canvas></div>
-                    <div id="noDataComps" class="no-data-msg">No company data available</div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-money-check text-emerald-500 mr-2"></i> Top Category Salaries (Mil)</h3>
-                    <div class="chart-box"><canvas id="cSals"></canvas></div>
-                    <div id="noDataSals" class="no-data-msg">No salary data available</div>
-                </div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-building text-amber-500 mr-2"></i> Top 10 Companies</h3><div class="chart-box"><canvas id="cComps"></canvas></div><div id="noDataComps" class="no-data-msg">No company data available</div></div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-money-check text-emerald-500 mr-2"></i> Top Category Salaries (Mil)</h3><div class="chart-box"><canvas id="cSals"></canvas></div><div id="noDataSals" class="no-data-msg">No salary data available</div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-chart-line text-blue-600 mr-2"></i> Salary Trend by Experience</h3>
-                    <div class="chart-box"><canvas id="cMix"></canvas></div>
-                    <div id="noDataMix" class="no-data-msg">No experience data available</div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-sitemap text-rose-500 mr-2"></i> Market Treemap (Top 5 Industries)</h3>
-                    <div class="chart-box"><canvas id="cTree"></canvas></div>
-                    <div id="noDataTree" class="no-data-msg">No industry data available</div>
-                </div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-chart-line text-blue-600 mr-2"></i> Salary Trend by Experience</h3><div class="chart-box"><canvas id="cMix"></canvas></div><div id="noDataMix" class="no-data-msg">No experience data available</div></div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-sitemap text-rose-500 mr-2"></i> Market Treemap (Top 5 Industries)</h3><div class="chart-box"><canvas id="cTree"></canvas></div><div id="noDataTree" class="no-data-msg">No industry data available</div></div>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-bolt text-blue-500 mr-2"></i> Top Skills Demand</h3>
-                    <div class="chart-box"><canvas id="cSkills"></canvas></div>
-                    <div id="noDataSkills" class="no-data-msg">No skills data available</div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title"><i class="fas fa-cloud text-cyan-500 mr-2"></i> Requirement Word Cloud</h3>
-                    <div class="chart-box"><canvas id="cWord"></canvas></div>
-                    <div id="noDataWord" class="no-data-msg">No requirement data available</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="card"><h3 class="card-title"><i class="fas fa-bolt text-blue-500 mr-2"></i> Top Skills Demand</h3><div class="chart-box"><canvas id="cSkills"></canvas></div><div id="noDataSkills" class="no-data-msg">No skills data available</div></div>
+                <div class="card"><h3 class="card-title"><i class="fas fa-cloud text-cyan-500 mr-2"></i> Requirement Word Cloud</h3><div class="chart-box"><canvas id="cWord"></canvas></div><div id="noDataWord" class="no-data-msg">No requirement data available</div></div>
+            </div>
+
+            <div class="card card-auto mb-10">
+                <h3 class="card-title"><i class="fas fa-table text-indigo-500 mr-2"></i> Raw Job Data Details</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 14%">Job Title</th>
+                                <th style="width: 13%">Company</th>
+                                <th style="width: 10%">Salary</th>
+                                <th style="width: 18%">Description</th>
+                                <th style="width: 18%">Requirements</th>
+                                <th style="width: 18%">Benefits</th>
+                                <th style="width: 9%" class="text-center">Link</th>
+                            </tr>
+                        </thead>
+                        <tbody id="job-table-body">
+                            </tbody>
+                    </table>
                 </div>
             </div>
+
         </main>
     </div>
 
@@ -171,7 +162,6 @@
         async function init() {
             document.getElementById('loading-overlay').classList.remove('hidden');
             
-            // 🟢 THÊM THUỘC TÍNH LOCATION VÀO PARAMS GỬI LÊN SERVER
             const params = new URLSearchParams({
                 location: document.getElementById('fLoc').value,
                 industry: document.getElementById('fInd').value,
@@ -189,146 +179,81 @@
                 document.getElementById('kSal').innerText = data.kpi.avg_salary;
                 document.getElementById('kExp').innerText = data.kpi.avg_exp;
 
-                // 1. LOCATION
-                renderChartSafe('cLocs', data.pie_locations && data.pie_locations.labels.length > 0, {
-                    type: 'pie', 
-                    data: { labels: data.pie_locations.labels, datasets: [{ data: data.pie_locations.data, backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e'] }] },
-                    options: { plugins: { tooltip: { callbacks: { label: function(ctx) { let v = ctx.raw||0; let t = ctx.chart._metasets[ctx.datasetIndex].total; return ` ${v} Jobs (${Math.round((v/t)*100)}%)`; }}}}}
-                }, 'noDataLocs');
+                renderChartSafe('cLocs', data.pie_locations && data.pie_locations.labels.length > 0, { type: 'pie', data: { labels: data.pie_locations.labels, datasets: [{ data: data.pie_locations.data, backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e'] }] }, options: { plugins: { tooltip: { callbacks: { label: function(ctx) { let v = ctx.raw||0; let t = ctx.chart._metasets[ctx.datasetIndex].total; return ` ${v} Jobs (${Math.round((v/t)*100)}%)`; }}}}} }, 'noDataLocs');
+                renderChartSafe('cLevels', data.pie_levels && data.pie_levels.labels.length > 0, { type: 'doughnut', data: { labels: data.pie_levels.labels, datasets: [{ data: data.pie_levels.data, backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b','#be4b9e'] }] } }, 'noDataLevels');
+                renderChartSafe('cComps', data.bar_companies && data.bar_companies.labels.length > 0, { type: 'bar', data: { labels: data.bar_companies.labels, datasets: [{ label: 'Jobs', data: data.bar_companies.data, backgroundColor: '#f59e0b' }] }, options: { indexAxis: 'y' } }, 'noDataComps');
+                renderChartSafe('cSals', data.bar_salaries && data.bar_salaries.labels.length > 0, { type: 'bar', data: { labels: data.bar_salaries.labels, datasets: [{ label: 'Avg Salary (M)', data: data.bar_salaries.data, backgroundColor: '#10b981' }] }, options: { indexAxis: 'y' } }, 'noDataSals');
+                renderChartSafe('cMix', data.mix_exp && data.mix_exp.labels.length > 0, { type: 'bar', data: { labels: data.mix_exp.labels, datasets: [ { type: 'line', label: 'Salary (M)', data: data.mix_exp.salary, borderColor: '#2563eb', backgroundColor: '#2563eb', yAxisID: 'y' }, { type: 'bar', label: 'Jobs', data: data.mix_exp.jobs, backgroundColor: '#93c5fd', yAxisID: 'y1' } ] }, options: { scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right', grid: {display: false} } } } }, 'noDataMix');
+                renderChartSafe('cSkills', data.bar_skills && data.bar_skills.labels.length > 0, { type: 'bar', data: { labels: data.bar_skills.labels, datasets: [{ label: 'Jobs', data: data.bar_skills.data, backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y' } }, 'noDataSkills');
 
-                // 2. LEVELS
-                renderChartSafe('cLevels', data.pie_levels && data.pie_levels.labels.length > 0, {
-                    type: 'doughnut', data: { labels: data.pie_levels.labels, datasets: [{ data: data.pie_levels.data, backgroundColor: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b','#be4b9e'] }] }
-                }, 'noDataLevels');
-
-                // 3. COMPANIES
-                renderChartSafe('cComps', data.bar_companies && data.bar_companies.labels.length > 0, {
-                    type: 'bar', data: { labels: data.bar_companies.labels, datasets: [{ label: 'Jobs', data: data.bar_companies.data, backgroundColor: '#f59e0b' }] }, options: { indexAxis: 'y' }
-                }, 'noDataComps');
-
-                // 4. SALARIES
-                renderChartSafe('cSals', data.bar_salaries && data.bar_salaries.labels.length > 0, {
-                    type: 'bar', data: { labels: data.bar_salaries.labels, datasets: [{ label: 'Avg Salary (M)', data: data.bar_salaries.data, backgroundColor: '#10b981' }] }, options: { indexAxis: 'y' }
-                }, 'noDataSals');
-
-                // 5. EXPERIENCE TREND
-                renderChartSafe('cMix', data.mix_exp && data.mix_exp.labels.length > 0, {
-                    type: 'bar',
-                    data: {
-                        labels: data.mix_exp.labels,
-                        datasets: [
-                            { type: 'line', label: 'Salary (M)', data: data.mix_exp.salary, borderColor: '#2563eb', backgroundColor: '#2563eb', yAxisID: 'y' },
-                            { type: 'bar', label: 'Jobs', data: data.mix_exp.jobs, backgroundColor: '#93c5fd', yAxisID: 'y1' }
-                        ]
-                    },
-                    options: { scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right', grid: {display: false} } } }
-                }, 'noDataMix');
-
-                // 6. SKILLS DEMAND
-                renderChartSafe('cSkills', data.bar_skills && data.bar_skills.labels.length > 0, {
-                    type: 'bar', data: { labels: data.bar_skills.labels, datasets: [{ label: 'Jobs', data: data.bar_skills.data, backgroundColor: '#3b82f6' }] }, options: { indexAxis: 'y' }
-                }, 'noDataSkills');
-
-                // 7. WORD CLOUD (Trích xuất từ Job Requirements)
                 let maxWord = 1, minWord = 0;
                 if (data.word_cloud && data.word_cloud.length > 0) {
                     const values = data.word_cloud.map(d => d.value);
-                    maxWord = Math.max(...values);
-                    minWord = Math.min(...values);
+                    maxWord = Math.max(...values); minWord = Math.min(...values);
                 }
+                renderChartSafe('cWord', data.word_cloud && data.word_cloud.length > 0, { type: 'wordCloud', data: { labels: data.word_cloud ? data.word_cloud.map(d => d.key) : [], datasets: [{ label: 'Tần suất', data: data.word_cloud ? data.word_cloud.map(d => d.value) : [], color: (ctx) => ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'][ctx.dataIndex % 6], font: (ctx) => { const val = ctx.raw || 0; const size = maxWord === minWord ? 40 : 36 + ((val - minWord) / (maxWord - minWord)) * 44; return { family: "'Inter', sans-serif", size: size, weight: '600' }; } }] }, options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` Xuất hiện: ${ctx.raw} lần` } } } } }, 'noDataWord');
 
-                renderChartSafe('cWord', data.word_cloud && data.word_cloud.length > 0, {
-                    type: 'wordCloud',
-                    data: {
-                        labels: data.word_cloud ? data.word_cloud.map(d => d.key) : [],
-                        datasets: [{
-                            label: 'Tần suất',
-                            data: data.word_cloud ? data.word_cloud.map(d => d.value) : [],
-                            color: (ctx) => ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'][ctx.dataIndex % 6],
-                            // Thuật toán ép cỡ chữ chống tràn
-                            font: (ctx) => {
-                                const val = ctx.raw || 0;
-                                const size = maxWord === minWord ? 40 : 36 + ((val - minWord) / (maxWord - minWord)) * 44;
-                                return { family: "'Inter', sans-serif", size: size, weight: '600' };
-                            }
-                        }]
-                    },
-                    options: { 
-                        plugins: { 
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: (ctx) => ` Xuất hiện: ${ctx.raw} lần` } }
-                        } 
-                    }
-                }, 'noDataWord');
-
-                // 8. TREEMAP
                 let safeTreeData = [];
-                if (data.treemap && data.treemap.length > 0) {
-                    safeTreeData = data.treemap.map(d => ({ industry: d.industry || d.category, category: d.category_name || d.category || d.type, value: d.value || 0 }));
-                }
+                if (data.treemap && data.treemap.length > 0) { safeTreeData = data.treemap.map(d => ({ industry: d.industry || d.category, category: d.category_name || d.category || d.type, value: d.value || 0 })); }
                 const uniqueIndustries = [...new Set(safeTreeData.map(d => d.industry))];
                 const hues = [220, 150, 40, 340, 270];
+                renderChartSafe('cTree', safeTreeData.length > 0, { type: 'treemap', data: { datasets: [{ tree: safeTreeData, key: 'value', groups: ['industry', 'category'], borderWidth: 1, borderColor: '#ffffff', spacing: 1, header: { display: true, backgroundColor: '#f1f5f9', color: '#1e293b', font: { family: "'Inter', sans-serif", weight: 'bold', size: 11 }, padding: 6, formatter: (ctx) => ctx.raw ? ctx.raw.l : '' }, backgroundColor: (ctx) => { if (ctx.type !== 'data' || ctx.raw.g === 'industry') return 'transparent'; const rawData = Array.isArray(ctx.raw._data) ? ctx.raw._data[0] : ctx.raw._data; if (!rawData) return '#ccc'; const catIndex = uniqueIndustries.indexOf(rawData.industry) % 5; const hue = hues[catIndex !== -1 ? catIndex : 0]; const siblings = safeTreeData.filter(d => d.industry === rawData.industry); siblings.sort((a, b) => b.value - a.value); const rank = siblings.findIndex(d => d.category === rawData.category); return `hsl(${hue}, 85%, ${40 + ((rank !== -1 ? rank : 0) * 12)}%)`; }, labels: { display: true, align: 'center', position: 'middle', color: '#ffffff', font: { family: "'Inter', sans-serif", weight: '600', size: 10 }, formatter: (ctx) => { if (ctx.type !== 'data' || ctx.raw.g === 'industry') return null; const rawData = Array.isArray(ctx.raw._data) ? ctx.raw._data[0] : ctx.raw._data; if (!rawData) return null; let catName = rawData.category; if (catName.length > 20) catName = catName.substring(0, 18) + '...'; return [catName, `${rawData.value.toLocaleString()} Jobs`]; } } }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { filter: (item) => item.raw.g !== 'industry', callbacks: { title: (items) => { const raw = items[0].raw; const orig = (raw && raw._data && Array.isArray(raw._data)) ? raw._data[0] : (raw._data || {}); return orig.industry || 'Chi tiết Lĩnh vực'; }, label: (ctx) => { const raw = ctx.raw; const orig = (raw && raw._data && Array.isArray(raw._data)) ? raw._data[0] : (raw._data || {}); const catName = orig.category || 'Chi tiết'; return `${catName}: ${raw.v.toLocaleString()} Jobs`; } } } } } }, 'noDataTree');
 
-                renderChartSafe('cTree', safeTreeData.length > 0, {
-                    type: 'treemap',
-                    data: {
-                        datasets: [{
-                            tree: safeTreeData, key: 'value', groups: ['industry', 'category'],
-                            borderWidth: 1, borderColor: '#ffffff', spacing: 1,
-                            header: { display: true, backgroundColor: '#f1f5f9', color: '#1e293b', font: { family: "'Inter', sans-serif", weight: 'bold', size: 11 }, padding: 6, formatter: (ctx) => ctx.raw ? ctx.raw.l : '' },
-                            backgroundColor: (ctx) => {
-                                if (ctx.type !== 'data' || ctx.raw.g === 'industry') return 'transparent'; 
-                                const rawData = Array.isArray(ctx.raw._data) ? ctx.raw._data[0] : ctx.raw._data;
-                                if (!rawData) return '#ccc';
-                                const catIndex = uniqueIndustries.indexOf(rawData.industry) % 5;
-                                const hue = hues[catIndex !== -1 ? catIndex : 0];
-                                const siblings = safeTreeData.filter(d => d.industry === rawData.industry);
-                                siblings.sort((a, b) => b.value - a.value);
-                                const rank = siblings.findIndex(d => d.category === rawData.category);
-                                return `hsl(${hue}, 85%, ${40 + ((rank !== -1 ? rank : 0) * 12)}%)`;
-                            },
-                            labels: { 
-                                display: true, align: 'center', position: 'middle', color: '#ffffff', font: { family: "'Inter', sans-serif", weight: '600', size: 10 },
-                                formatter: (ctx) => {
-                                    if (ctx.type !== 'data' || ctx.raw.g === 'industry') return null;
-                                    const rawData = Array.isArray(ctx.raw._data) ? ctx.raw._data[0] : ctx.raw._data;
-                                    if (!rawData) return null;
-                                    let catName = rawData.category;
-                                    if (catName.length > 20) catName = catName.substring(0, 18) + '...';
-                                    return [catName, `${rawData.value.toLocaleString()} Jobs`];
-                                }
-                            }
-                        }]
-                    },
-                    options: { 
-                        maintainAspectRatio: false, 
-                        plugins: { 
-                            legend: { display: false }, 
-                            tooltip: {
-                                    filter: (item) => item.raw.g !== 'industry',
-                                    callbacks: { 
-                                        title: (items) => {
-                                            const raw = items[0].raw;
-                                            const orig = (raw && raw._data && Array.isArray(raw._data)) ? raw._data[0] : (raw._data || {});
-                                            return orig.industry || 'Chi tiết Lĩnh vực';
-                                        },
-                                        label: (ctx) => {
-                                            const raw = ctx.raw;
-                                            const orig = (raw && raw._data && Array.isArray(raw._data)) ? raw._data[0] : (raw._data || {});
-                                            const catName = orig.category || 'Chi tiết';
-                                            return `${catName}: ${raw.v.toLocaleString()} Jobs`;
-                                        }
-                                    } 
-                                }
-                        } 
-                    }
-                }, 'noDataTree');
+                // 🟢 ĐỔ DỮ LIỆU VÀO BẢNG RAW DATA
+                const tbody = document.getElementById('job-table-body');
+                tbody.innerHTML = ''; // Xóa sạch dữ liệu cũ
+                if (data.table_data && data.table_data.length > 0) {
+                    data.table_data.forEach(job => {
+                        const tr = document.createElement('tr');
+                        // Sử dụng .replace(/"/g, '&quot;') để chống lỗi hiển thị dấu ngoặc kép HTML
+                        tr.innerHTML = `
+                            <td class="font-bold text-blue-600">${job.title}</td>
+                            <td class="font-medium text-slate-700">${job.company}</td>
+                            <td class="text-emerald-600 font-bold whitespace-nowrap">${job.salary}</td>
+                            <td><div class="text-wrap-cell" title="${(job.desc || '').replace(/"/g, '&quot;')}">${job.desc}</div></td>
+                            <td><div class="text-wrap-cell" title="${(job.req || '').replace(/"/g, '&quot;')}">${job.req}</div></td>
+                            <td><div class="text-wrap-cell" title="${(job.ben || '').replace(/"/g, '&quot;')}">${job.ben}</div></td>
+                            <td class="text-center align-middle">
+                                <a href="${job.url}" target="_blank" class="inline-flex items-center justify-center bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap">
+                                    <i class="fas fa-external-link-alt mr-1"></i> Xem
+                                </a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    // Sửa colspan="6" thành colspan="7" vì bảng đã có 7 cột
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-500 font-medium italic">Không có dữ liệu phù hợp với bộ lọc hiện tại</td></tr>`;
+                }
 
             } catch (err) { console.error("Data load failed:", err); }
             
             setTimeout(() => { document.getElementById('loading-overlay').classList.add('hidden'); }, 300);
         }
         
+        // 🟢 THUẬT TOÁN SẮP XẾP DROPDOWN (A-Z, KHÁC Ở CUỐI) TRƯỚC KHI KHỞI CHẠY
+        function sortFilterDropdowns() {
+            const filterIds = ['fLoc', 'fInd', 'fCat', 'fLvl'];
+            filterIds.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                
+                const options = Array.from(select.options);
+                const allOpt = options.find(opt => opt.value === 'All');
+                const khacOpt = options.find(opt => opt.value === 'Khác' || opt.value === 'Khác ' || opt.value.toLowerCase() === 'others');
+                
+                const restOpts = options.filter(opt => opt !== allOpt && opt !== khacOpt);
+                restOpts.sort((a, b) => a.text.localeCompare(b.text, 'vi'));
+                
+                select.innerHTML = '';
+                
+                if (allOpt) select.appendChild(allOpt);
+                restOpts.forEach(opt => select.appendChild(opt));
+                if (khacOpt) select.appendChild(khacOpt);
+            });
+        }
+
+        sortFilterDropdowns();
         init();
     </script>
 </body>
