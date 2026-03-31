@@ -176,6 +176,7 @@ docker exec -it vww_flask_app python dags/master_pipeline.py
 - [ ] Mở rộng Data Lake trên nền tảng Cloud (GCP/AWS) để xử lý lượng dữ liệu lớn hơn.
 - [ ] Kết nối thêm các nguồn dữ liệu từ nền tảng khác để làm phong phú Data Warehouse.
 - [ ] Phát triển tính năng Agentic AI tự động sinh Cover Letter dựa trên Job Description.
+- [ ] Tích hợp thêm các model embedding, LLM cao cấp hơn và tối ưu thêm mô hình thuật toán vector search để tối ưu độ chính xác
 
 ---
 
