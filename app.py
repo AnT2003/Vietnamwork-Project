@@ -1,21 +1,4 @@
-import sys
-
-# 🟢 VŨ KHÍ TỐI THƯỢNG: MOCK THƯ VIỆN STREAMLIT 
-# Đoạn code này đánh lừa Python, tạo ra một thư viện Streamlit "giả" vô hại.
-# Điều này giúp file ai_engine.py của bạn giữ nguyên được các thẻ @st.cache_resource 
-# mà không hề làm sập hệ thống Flask. Tuyệt đối tuân thủ yêu cầu không sửa ai_engine.py!
-class MockStreamlit:
-    def __getattr__(self, name):
-        def mock_func(*args, **kwargs):
-            if len(args) == 1 and callable(args[0]):
-                return args[0]
-            return lambda func: func
-        return mock_func
-
-sys.modules['streamlit'] = MockStreamlit()
-
-# ----------------------------------------------------------------------
-# TỪ ĐÂY TRỞ XUỐNG LÀ KHUNG FLASK BÌNH THƯỜNG
+# Import các thư viện cần thiết
 from flask import Flask, render_template, request, jsonify
 from core_engine.dashboard_engine import get_filter_options, load_dashboard_data_json
 from core_engine.ai_engine import fetch_and_rank_jobs, generate_llm_response, extract_text_from_pdf
@@ -34,22 +17,28 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    ind, cat, lvl = get_filter_options()
-    return render_template('dashboard.html', industries=ind, categories=cat, levels=lvl)
+    # 🟢 ĐÃ SỬA: Lấy thêm danh sách địa điểm (locs) từ hàm get_filter_options
+    ind, cat, lvl, locs = get_filter_options()
+    # 🟢 ĐÃ SỬA: Truyền thêm biến locations xuống file HTML
+    return render_template('dashboard.html', industries=ind, categories=cat, levels=lvl, locations=locs)
 
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
 
 # ==========================================
-# API TRUY XUẤT DỮ LIỆU DASHBOARD (Đã khôi phục)
+# API TRUY XUẤT DỮ LIỆU DASHBOARD
 # ==========================================
 @app.route('/api/dashboard_data')
 def api_dashboard():
+    # Tạo các biến nhận filter từ query params, có giá trị mặc định là 'All'
+    loc = request.args.get('location', 'All')
     ind = request.args.get('industry', 'All')
     cat = request.args.get('category', 'All')
     lvl = request.args.get('level', 'All')
-    data = load_dashboard_data_json(ind, cat, lvl)
+    
+    # Truyền thêm loc vào hàm load dữ liệu
+    data = load_dashboard_data_json(ind, cat, lvl, loc)
     return jsonify(data)
 
 # ==========================================
@@ -99,7 +88,7 @@ def api_chat():
         # Lưu câu hỏi vào DB
         session_manager.add_message(session_id, 'user', user_query, cv_text)
 
-        # 4. Tìm việc và Gọi AI (Gọi trực tiếp từ ai_engine.py đã tối ưu của bạn)
+        # 4. Tìm việc và Gọi AI
         jobs_df, is_fallback, req_loc = fetch_and_rank_jobs(user_query, cv_text, top_k=10)
         reply = generate_llm_response(user_query, jobs_df, cv_text, chat_history, is_fallback, req_loc)
         

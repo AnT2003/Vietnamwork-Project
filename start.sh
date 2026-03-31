@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🟢 TUYỆT CHIÊU 1: Cấm Airflow đọc nhầm file AI
+# Ngăn Airflow đọc nhầm file AI
 echo -e "scripts/.*\nmaster_pipeline.*\ninitial_load.*" > /app/dags/.airflowignore
 
 export AIRFLOW__CORE__DAGS_FOLDER="/app/dags"
@@ -22,7 +22,7 @@ airflow users create \
     --email admin@example.com \
     --password admin || true
 
-# 🟢 TUYỆT CHIÊU 2: Ép Airflow chỉ dùng 1 Worker để tiết kiệm tối đa RAM
+# Ép Airflow chỉ dùng 1 Worker để tiết kiệm tối đa RAM
 echo "3. Khởi động Airflow Webserver (Chế độ tiết kiệm RAM)..."
 nohup airflow webserver -p 8999 --workers 1 > /app/airflow-web.log 2>&1 &
 
