@@ -2,94 +2,194 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Assistant | VietnamWorks</title>
+    <title>AI Headhunter | VietnamWorks</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
-        .glass-nav { background: rgba(255,255,255,0.95); border-bottom: 1px solid #e5e7eb; z-index: 200;}
-        .nav-link { color: #4b5563; font-size: 0.85rem; font-weight: 600; text-decoration: none;}
-        .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 4px; }
-        .chat-box { height: calc(100vh - 200px); overflow-y: auto; scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; overflow: hidden; }
+        .chat-box { flex-grow: 1; overflow-y: auto; scroll-behavior: smooth; padding-right: 10px;}
         
+        /* Box Tin nhắn */
         .msg-user { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 16px 0 16px 16px; padding: 12px 16px; display: inline-block; max-width: 85%; }
-        .msg-ai { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0 16px 16px 16px; padding: 16px 20px; display: inline-block; max-width: 95%; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow-x: auto; }
+        .msg-ai { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0 16px 16px 16px; padding: 20px 24px; display: inline-block; max-width: 95%; box-shadow: 0 2px 4px rgba(0,0,0,0.02); overflow-x: auto; }
         
-        /* CSS LÀM ĐẸP CHAT AI */
+        /* Render Markdown */
         .msg-ai a { color: #2563eb; font-weight: 600; text-decoration: none; padding: 2px 4px; background: #eff6ff; border-radius: 4px; transition: 0.2s; }
-        .msg-ai a:hover { color: #1e3a8a; background: #dbeafe; text-decoration: underline; }
-        
-        .msg-ai ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.75rem 0; }
-        .msg-ai ol { list-style-type: decimal; padding-left: 1.5rem; margin: 0.75rem 0; }
-        .msg-ai li { margin-bottom: 0.5rem; line-height: 1.5; }
+        .msg-ai a:hover { text-decoration: underline; background: #dbeafe; }
+        .msg-ai ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0 1rem 0; }
+        .msg-ai li { margin-bottom: 0.5rem; line-height: 1.6; }
         .msg-ai p { margin-bottom: 1rem; line-height: 1.6; }
-        .msg-ai p:last-child { margin-bottom: 0; }
         .msg-ai strong, .msg-ai b { font-weight: 700; color: #0f172a; }
         
-        .msg-ai table { width: 100%; border-collapse: collapse; margin: 1rem 0; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; font-size: 0.9rem; }
-        .msg-ai th, .msg-ai td { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; vertical-align: top; }
-        .msg-ai th { background-color: #f8fafc; font-weight: 700; color: #334155; }
+        /* Bảng hiển thị (Nếu AI quyết định vẽ bảng) */
+        .msg-ai table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; background: white; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg-ai th, .msg-ai td { border: 1px solid #cbd5e1; padding: 12px 16px; text-align: left; vertical-align: top; }
+        .msg-ai th { background-color: #f1f5f9; font-weight: 700; color: #1e293b; text-transform: uppercase; font-size: 0.8rem; }
         .msg-ai tr:nth-child(even) { background-color: #f8fafc; }
+        
+        /* Job Card (Dành cho list hoặc html) */
+        .job-card { background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .job-card h3 { margin-top: 0; color: #1e40af; font-weight: 700; font-size: 1.1rem; }
+        .job-card h3 a { color: #2563eb; text-decoration: underline; }
+        
+        /* Sidebar Scrollbar */
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body>
-    <nav class="glass-nav fixed w-full z-50 top-0 px-6 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-600 rounded-lg flex justify-center items-center text-white"><i class="fas fa-brain"></i></div><span class="font-black text-blue-700">VietnamWorks AI</span></div>
-        <div class="hidden md:flex space-x-6"><a href="/" class="nav-link">Overview</a><a href="/dashboard" class="nav-link">Dashboard</a><a href="/chat" class="nav-link active">AI Assistant</a></div>
-    </nav>
+<body class="flex h-screen bg-white">
 
-    <div class="pt-24 px-6 max-w-5xl mx-auto flex flex-col h-screen">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex-grow flex flex-col">
-            <div id="chatArea" class="chat-box mb-4 pr-2 flex flex-col gap-4">
+    <div class="w-64 bg-slate-900 text-white flex flex-col hidden md:flex shrink-0">
+        <div class="p-4">
+            <button onclick="startNewChat()" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors shadow-sm">
+                <i class="fas fa-plus"></i> Bắt đầu Chat mới
+            </button>
+        </div>
+        <div class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Lịch sử của bạn</div>
+        
+        <div id="sessionList" class="flex-1 overflow-y-auto sidebar-scroll px-3 pb-4 space-y-1">
+            </div>
+        
+        <div class="p-4 border-t border-slate-800 text-sm flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center"><i class="fas fa-user"></i></div>
+            <span class="font-medium">Ứng viên VIP</span>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col relative h-full">
+        <header class="h-16 bg-white/90 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex justify-center items-center text-white"><i class="fas fa-brain"></i></div>
+                <span class="font-black text-blue-700 text-lg">VietnamWorks AI</span>
+            </div>
+            <div class="flex space-x-6 text-sm font-medium">
+                <a href="/" class="text-slate-500 hover:text-blue-600">Overview</a>
+                <a href="/dashboard" class="text-slate-500 hover:text-blue-600">Dashboard</a>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-hidden flex flex-col max-w-4xl mx-auto w-full p-4 md:p-6">
+            <div id="chatArea" class="chat-box flex flex-col gap-5 pb-4">
                 <div class="flex items-start gap-3">
                     <div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div>
                     <div class="msg-ai text-sm text-slate-700 leading-relaxed">
-                        <b>👋 Xin chào!</b><br>Tôi là AI Headhunter sử dụng công nghệ HyDE + Hybrid Search. Bạn có thể <b>đính kèm CV (PDF)</b> và nhập yêu cầu tìm việc nhé!
+                        <b>👋 Xin chào!</b><br>Tôi là AI Headhunter. Hãy đính kèm CV (PDF) hoặc nói cho tôi biết vị trí bạn muốn tìm kiếm nhé!
                     </div>
                 </div>
             </div>
             
-            <div id="fileNameDisplay" class="text-xs text-emerald-600 font-semibold ml-4 mt-2 hidden mb-2"></div>
-            
-            <form id="chatForm" class="mt-auto relative flex items-center bg-slate-50 border border-slate-200 rounded-full pr-1 transition-all focus-within:border-blue-500 focus-within:bg-white">
-                
-                <label for="cvUpload" class="cursor-pointer text-slate-400 hover:text-blue-600 pl-5 pr-2 py-3 transition-colors" title="Đính kèm CV (PDF)">
-                    <i class="fas fa-paperclip text-lg"></i>
-                </label>
-                <input type="file" id="cvUpload" accept=".pdf" class="hidden" onchange="showFileName(this)">
-                
-                <input type="text" id="userInput" class="w-full bg-transparent py-3 px-2 text-sm outline-none" placeholder="VD: Tìm việc AI Engineer ở Hà Nội..." required>
-                
-                <button type="submit" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition shrink-0 ml-1">
-                    <i class="fas fa-paper-plane text-sm"></i>
-                </button>
-            </form>
+            <div class="mt-auto shrink-0 relative">
+                <div id="fileNameDisplay" class="text-xs text-emerald-600 font-semibold ml-4 mb-2 hidden"></div>
+                <form id="chatForm" class="flex items-center bg-slate-50 border border-slate-200 rounded-2xl pr-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
+                    <label for="cvUpload" class="cursor-pointer text-slate-400 hover:text-blue-600 pl-4 pr-2 py-3 transition-colors" title="Đính kèm CV (PDF)">
+                        <i class="fas fa-paperclip text-xl"></i>
+                    </label>
+                    <input type="file" id="cvUpload" accept=".pdf" class="hidden" onchange="showFileName(this)">
+                    <input type="text" id="userInput" class="w-full bg-transparent py-4 px-2 text-sm outline-none" placeholder="Nhập yêu cầu tìm việc của bạn..." required>
+                    <button type="submit" class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition shrink-0 ml-1 shadow-md">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                <div class="text-center text-[11px] text-slate-400 mt-2">AI có thể mắc lỗi định dạng. Hãy kiểm tra lại thông tin quan trọng.</div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Cấu hình thư viện marked.js
-        marked.setOptions({
-            gfm: true,
-            breaks: true
-        });
-
+        marked.setOptions({ gfm: true, breaks: true });
+        
         const chatArea = document.getElementById('chatArea');
-        let history = [];
+        const sessionList = document.getElementById('sessionList');
+        let currentSessionId = null;
         let currentCvText = "";
 
         function showFileName(input) {
             const display = document.getElementById('fileNameDisplay');
             if (input.files && input.files.length > 0) {
-                display.innerHTML = `<i class="fas fa-file-pdf mr-1"></i> Đã đính kèm CV: ${input.files[0].name}`;
+                display.innerHTML = `<i class="fas fa-file-pdf mr-1"></i> Đã đính kèm: ${input.files[0].name}`;
                 display.classList.remove('hidden');
-            } else {
-                display.classList.add('hidden');
-            }
+            } else { display.classList.add('hidden'); }
+        }
+
+        // Bẻ gãy các bảng dính liền nếu LLM làm sai format Markdown
+        function fixLLMBrokenTable(text) {
+            let fixed = text.replace(/\|\s*\|/g, "|\n|");
+            fixed = fixed.replace(/([^\n])\s*(\|(?:[-: ]+\|)+)\s*([^\n])/g, "$1\n$2\n$3");
+            fixed = fixed.replace(/([^\n])\s*(\|(?:[-: ]+\|)+)/g, "$1\n$2");
+            fixed = fixed.replace(/(\|(?:[-: ]+\|)+)\s*([^\n])/g, "$1\n$2");
+            return fixed;
+        }
+
+        function appendUserMessage(text) {
+            chatArea.insertAdjacentHTML('beforeend', `<div class="flex items-start justify-end gap-3"><div class="msg-user text-sm text-slate-700">${text}</div><div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user"></i></div></div>`);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function appendAIMessage(text, isMarkdown = true) {
+            const finalHtml = isMarkdown ? marked.parse(fixLLMBrokenTable(text)) : text;
+            chatArea.insertAdjacentHTML('beforeend', `<div class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-700 leading-relaxed">${finalHtml}</div></div>`);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        async function loadAllSessions() {
+            try {
+                const res = await fetch('/api/sessions');
+                const sessions = await res.json();
+                sessionList.innerHTML = '';
+                sessions.forEach(s => {
+                    const isActive = s.id === currentSessionId ? 'bg-slate-800 border-l-2 border-blue-500' : 'hover:bg-slate-800 border-l-2 border-transparent';
+                    sessionList.insertAdjacentHTML('beforeend', `
+                        <div class="group flex items-center justify-between p-2 rounded-r cursor-pointer transition-colors ${isActive}" onclick="loadSession('${s.id}')">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <i class="far fa-comment-alt text-slate-400"></i>
+                                <span class="text-sm truncate text-slate-200">${s.title}</span>
+                            </div>
+                            <button onclick="deleteSession('${s.id}', event)" class="hidden group-hover:block text-slate-500 hover:text-red-400"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `);
+                });
+            } catch (e) { console.error("Lỗi tải lịch sử chat"); }
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            currentCvText = "";
+            document.getElementById('fileNameDisplay').classList.add('hidden');
+            document.getElementById('cvUpload').value = "";
+            chatArea.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div>
+                    <div class="msg-ai text-sm text-slate-700 leading-relaxed"><b>👋 Xin chào!</b><br>Tôi là AI Headhunter. Hãy đính kèm CV (PDF) hoặc nói cho tôi biết vị trí bạn muốn tìm kiếm nhé!</div>
+                </div>`;
+            loadAllSessions();
+        }
+
+        async function loadSession(id) {
+            currentSessionId = id;
+            try {
+                const res = await fetch(`/api/sessions/${id}`);
+                const messages = await res.json();
+                
+                chatArea.innerHTML = ''; 
+                messages.forEach(msg => {
+                    if (msg.role === 'user') appendUserMessage(msg.content);
+                    else appendAIMessage(msg.content);
+                });
+                loadAllSessions();
+            } catch (e) { alert("Lỗi tải tin nhắn"); }
+        }
+
+        async function deleteSession(id, event) {
+            event.stopPropagation(); 
+            if(!confirm("Bạn có chắc chắn muốn xóa cuộc trò chuyện này?")) return;
+            try {
+                await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+                if(currentSessionId === id) startNewChat();
+                else loadAllSessions();
+            } catch (e) { alert("Lỗi xóa chat"); }
         }
 
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
@@ -99,32 +199,27 @@
             const text = input.value;
             input.value = '';
 
-            chatArea.insertAdjacentHTML('beforeend', `<div class="flex items-start justify-end gap-3"><div class="msg-user text-sm text-slate-700">${text}</div><div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user"></i></div></div>`);
-            
-            const historyToSend = [...history]; 
-            history.push({role: "user", content: text});
+            appendUserMessage(text);
             
             const loadId = 'load-' + Date.now();
-            chatArea.insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Đang phân tích yêu cầu & quét Database...</div></div>`);
+            chatArea.insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Đang phân tích dữ liệu & quét Database...</div></div>`);
             chatArea.scrollTop = chatArea.scrollHeight;
 
             const formData = new FormData();
             formData.append('query', text);
-            formData.append('history', JSON.stringify(historyToSend)); 
+            if(currentSessionId) formData.append('session_id', currentSessionId);
             
-            if (fileInput.files.length > 0) {
-                formData.append('cv_file', fileInput.files[0]);
-            } else {
-                formData.append('cv_text', currentCvText);
-            }
+            if (fileInput.files.length > 0) formData.append('cv_file', fileInput.files[0]);
+            else formData.append('cv_text', currentCvText);
 
             try {
-                const res = await fetch('/api/ai_chat', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const res = await fetch('/api/ai_chat', { method: 'POST', body: formData });
                 const data = await res.json();
+                
+                if(data.session_id && data.session_id !== currentSessionId) {
+                    currentSessionId = data.session_id;
+                    loadAllSessions(); 
+                }
                 
                 if (data.cv_text) {
                     currentCvText = data.cv_text;
@@ -132,18 +227,15 @@
                     document.getElementById('fileNameDisplay').classList.add('hidden');
                 }
                 
-                // Dùng marked.parse() để vẽ bảng 
-                const htmlReply = marked.parse(data.reply);
-
                 document.getElementById(loadId).remove();
-                chatArea.insertAdjacentHTML('beforeend', `<div class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-700 leading-relaxed">${htmlReply}</div></div>`);
-                history.push({role: "assistant", content: data.reply});
+                appendAIMessage(data.reply);
             } catch (err) {
                 document.getElementById(loadId).remove();
-                chatArea.insertAdjacentHTML('beforeend', `<div class="flex items-start gap-3"><div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-rose-700 leading-relaxed">⚠️ Lỗi hệ thống: ${err.message}</div></div>`);
+                appendAIMessage(`⚠️ Lỗi hệ thống: ${err.message}`, false);
             }
-            chatArea.scrollTop = chatArea.scrollHeight;
         });
+
+        loadAllSessions();
     </script>
 </body>
 </html>

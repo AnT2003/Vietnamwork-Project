@@ -20,7 +20,6 @@ services:
     container_name: vww_flask_app
     restart: always
     ports:
-      # Map chuẩn xác cổng 6868 ra máy chủ
       - "6868:6868" 
       - "8999:8999" 
     depends_on:

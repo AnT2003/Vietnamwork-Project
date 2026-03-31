@@ -9,7 +9,8 @@ if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
 from config import DB_URI, RAW_DIR, get_csv_files
-from scripts.sql_queries import SQL_TRUNCATE_STAGING, SQL_TRANSFORM_LOAD_DWH, SQL_VALIDATE_NULL, SQL_VALIDATE_COUNT
+# Đã xóa SQL_VALIDATE_NULL vì dùng DQ Rules mới
+from scripts.sql_queries import SQL_TRUNCATE_STAGING, SQL_TRANSFORM_LOAD_DWH, SQL_VALIDATE_COUNT
 from scripts.logger import log_start, log_success, log_fail
 from scripts.crawl_vietnamworks import start_crawl 
 from scripts.ai_tasks import run_generate_and_load_vectors
@@ -64,10 +65,50 @@ def run_load_to_staging(engine_obj, data_dir):
 def run_transform_to_dwh(conn): 
     conn.execute(text(SQL_TRANSFORM_LOAD_DWH))
 
-def run_validation(conn):
-    if conn.execute(text(SQL_VALIDATE_NULL)).scalar() > 0: 
-        raise ValueError("Lỗi: Khóa chính (PK) bị NULL sau khi nạp.")
-    return conn.execute(text(SQL_VALIDATE_COUNT)).scalar()
+# 🟢 HÀM KIỂM ĐỊNH DATA QUALITY MỚI
+def run_validation(engine):
+    print("   [+] Đang thực thi Data Quality (DQ) Checks...")
+    
+    dq_rules = {
+        # 1. Tính toàn vẹn (Completeness)
+        "PK_NULL_CHECK": {
+            "query": "SELECT COUNT(*) FROM dwh.fact_job_postings WHERE job_id IS NULL OR company_id IS NULL",
+            "error_msg": "Phát hiện Job ID hoặc Company ID bị NULL trong bảng Fact."
+        },
+        # 2. Tính duy nhất (Uniqueness)
+        "DUPLICATE_JOB_CHECK": {
+            "query": "SELECT (COUNT(job_id) - COUNT(DISTINCT job_id)) FROM dwh.dim_job_details",
+            "error_msg": "Phát hiện Job ID bị trùng lặp (Duplicate) trong dim_job_details."
+        },
+        # 3. Tính nhất quán (Referential Integrity - Orphan Check)
+        "ORPHAN_COMPANY_CHECK": {
+            "query": "SELECT COUNT(*) FROM dwh.fact_job_postings f LEFT JOIN dwh.dim_companies c ON f.company_id = c.company_id WHERE c.company_id IS NULL",
+            "error_msg": "Có Job thuộc về một Công ty không tồn tại (Khóa ngoại mồ côi)."
+        },
+        # 4. Logic Nghiệp vụ (Business Logic)
+        "NEGATIVE_SALARY_CHECK": {
+            "query": "SELECT COUNT(*) FROM dwh.dim_job_details WHERE salary_numeric < 0",
+            "error_msg": "Phát hiện công việc có mức lương bị ÂM."
+        },
+        "LOGICAL_DATE_CHECK": {
+            "query": "SELECT COUNT(*) FROM dwh.dim_job_details WHERE posted_date > expiry_date",
+            "error_msg": "Ngày đăng tuyển (posted_date) lại lớn hơn ngày hết hạn (expiry_date)."
+        }
+    }
+    
+    error_logs = []
+    with engine.connect() as conn:
+        for rule_id, rule_info in dq_rules.items():
+            fail_count = conn.execute(text(rule_info["query"])).scalar()
+            if fail_count > 0:
+                error_logs.append(f"     ❌ [{rule_id}] {rule_info['error_msg']} ({fail_count} records vi phạm)")
+    
+    if error_logs:
+        raise ValueError("DATA QUALITY FAILED:\n" + "\n".join(error_logs))
+        
+    print("   [+] ✅ Pass 100% Data Quality Checks!")
+    with engine.connect() as conn:
+        return conn.execute(text(SQL_VALIDATE_COUNT)).scalar()
 
 def run_initial_load():
     engine = create_engine(DB_URI)
@@ -81,7 +122,7 @@ def run_initial_load():
 
     try:
         print("\n🚀 PHASE 1: CRAWLER (Đang cào dữ liệu gốc...)")
-        start_crawl(target_total=100, output_dir=RAW_DIR)
+        start_crawl(target_total=10000, output_dir=RAW_DIR)
 
         print("\n🚀 PHASE 2: ETL (Đọc file gốc và đẩy vào DWH)")
         records_processed = 0
@@ -89,7 +130,8 @@ def run_initial_load():
             with engine.connect() as conn:
                 with conn.begin(): 
                     run_transform_to_dwh(conn)
-                    records_processed = run_validation(conn)
+            # 🟢 SỬA LỖI: Gọi validation ở ngoài khối conn để nhận 'engine' chuẩn
+            records_processed = run_validation(engine)
 
         print("\n🚀 PHASE 3: AI VECTORIZATION (Mã hóa toàn bộ data gốc)")
         run_generate_and_load_vectors(engine)
