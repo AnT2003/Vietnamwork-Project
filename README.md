@@ -154,7 +154,6 @@ Chạy lệnh sau để kích hoạt toàn bộ luồng ETL Pipeline nạp thêm
 ```bash
 docker exec -it vww_flask_app python dags/master_pipeline.py
 ```
-*(Lưu ý: Quá trình này sẽ mất một khoảng thời gian tùy thuộc vào số lượng Jobs được thu thập và tốc độ nhúng Vector của hệ thống phần cứng).*
 
 ---
 
