@@ -1,0 +1,22 @@
+# Chặn thư mục sinh ra lỗi (chứa log và config nội bộ của Airflow)
+airflow/
+
+# Chặn thư mục data (không bê hàng trăm MB data cũ vào image làm nặng máy)
+data/
+
+# Chặn mật khẩu bảo mật
+.env
+
+# Chặn rác của Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Chặn log rác
+logs/
+*.log
