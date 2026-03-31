@@ -28,7 +28,7 @@ DROP TABLE IF EXISTS staging.raw_fact_job_postings,
                      staging.raw_dim_categories CASCADE;
 
 CREATE TABLE staging.raw_fact_job_postings (job_id TEXT, company_id TEXT, industry_id TEXT, crawled_at TEXT);
-CREATE TABLE staging.raw_dim_job_details (job_id TEXT, job_title TEXT, job_url TEXT, salary_text TEXT, job_level TEXT, view_count TEXT, posted_date TEXT, expiry_date TEXT, years_of_experience TEXT, job_description TEXT, job_requirements TEXT, job_benefits TEXT);
+CREATE TABLE staging.raw_dim_job_details (job_id TEXT, job_title TEXT, job_url TEXT, salary_text TEXT, job_level TEXT, posted_date TEXT, expiry_date TEXT, years_of_experience TEXT, job_description TEXT, job_requirements TEXT, job_benefits TEXT);
 CREATE TABLE staging.raw_dim_companies (company_id TEXT, company_name TEXT, description TEXT, logo_url TEXT, profile_url TEXT);
 CREATE TABLE staging.raw_dim_industries (industry_id TEXT, industry_name TEXT);
 CREATE TABLE staging.raw_dim_locations (job_id TEXT, location_name TEXT);
@@ -71,7 +71,6 @@ CREATE TABLE dwh.dim_job_details (
     salary_text TEXT, 
     salary_numeric BIGINT DEFAULT 0, 
     job_level TEXT, 
-    view_count INTEGER, 
     posted_date DATE, 
     expiry_date DATE, 
     years_of_experience INTEGER DEFAULT 0, 
