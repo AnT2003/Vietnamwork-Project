@@ -98,7 +98,11 @@ Vietnamworks_Project/
 │   ├── master_pipeline.py    # Script ETL cập nhật dữ liệu hằng ngày (Delta Load)
 │   └── daily_scheduler.py    # Cấu hình DAG cho Airflow
 ├── sql/                      # Script khởi tạo Database Schema
-├── templates/                # Giao diện Web (Dashboard & Chat)
+    ├── setup_database.sql  
+├── templates/                # Giao diện Web 
+    ├── index.html            # Giao diện trang chủ
+    ├── dashboard.html        # Giao diện Dashboard
+    ├── chat.html             # Giao diện chatbot
 ├── app.py                    # Flask Web App Server
 ├── config.py                 # File cấu hình biến môi trường
 ├── docker-compose.yml        # Cấu hình Docker Services
