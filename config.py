@@ -8,23 +8,19 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Lệnh này cực kỳ quan trọng nếu bạn chạy code trên máy thật (không dùng Docker)
 load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
-# ==========================================
-# 3. LẤY CÁC BIẾN MÔI TRƯỜNG (Có giá trị mặc định phòng hờ)
-# ==========================================
+# 3. LẤY CÁC BIẾN MÔI TRƯỜNG
 # Dùng os.getenv("TÊN_BIẾN_TRONG_ENV", "Giá_trị_mặc_định_nếu_bị_lỗi_hoặc_quên_điền")
 DB_URI = os.getenv("DB_URI", "postgresql://postgres:postgres@localhost:5455/vietnamworks")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
 
-# ==========================================
 # 4. CẤU HÌNH ĐƯỜNG DẪN THƯ MỤC DATA (GIỮ NGUYÊN)
-# ==========================================
 RAW_DIR = os.path.join(ROOT_DIR, 'data', 'raw')
 DAILY_DIR = os.path.join(ROOT_DIR, 'data', 'daily')
 
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(DAILY_DIR, exist_ok=True)
 
-# Các cấu hình API Crawler giữ nguyên
+# Các cấu hình API Crawler 
 API_SEARCH_URL = "https://ms.vietnamworks.com/job-search/v1.0/search"
 HEADERS = {
     "Accept": "*/*",
@@ -37,7 +33,7 @@ HEADERS = {
     "X-Source": "Page-Container"
 }
 
-# Hàm tiện ích lấy file (giữ nguyên)
+# Hàm tiện ích lấy file 
 def get_csv_files(base_dir):
     return {
         "dim_categories": os.path.join(base_dir, "dim_categories.csv"),
