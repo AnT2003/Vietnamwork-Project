@@ -202,7 +202,7 @@
             appendUserMessage(text);
             
             const loadId = 'load-' + Date.now();
-            chatArea.insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Đang phân tích dữ liệu & quét Database...</div></div>`);
+            chatArea.insertAdjacentHTML('beforeend', `<div id="${loadId}" class="flex items-start gap-3"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-robot"></i></div><div class="msg-ai text-sm text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Đang phân tích...</div></div>`);
             chatArea.scrollTop = chatArea.scrollHeight;
 
             const formData = new FormData();
