@@ -35,7 +35,7 @@ SQL_TRANSFORM_LOAD_DWH = """
     -- 3.2 Nạp dữ liệu vào bảng Dimension Chi tiết Công việc (Chứa logic Transform cực nặng)
     INSERT INTO dwh.dim_job_details (
         job_id, job_title, job_url, salary_text, salary_numeric, job_level, 
-        view_count, posted_date, expiry_date, years_of_experience, 
+        posted_date, expiry_date, years_of_experience, 
         job_description, job_requirements, job_benefits
     )
     SELECT 
@@ -50,7 +50,7 @@ SQL_TRANSFORM_LOAD_DWH = """
             ELSE raw_salary_numeric
         END AS salary_numeric,
         
-        job_level, view_count, posted_date, expiry_date, years_of_experience, 
+        job_level, posted_date, expiry_date, years_of_experience, 
         job_description, job_requirements, job_benefits 
     FROM (
         SELECT DISTINCT ON (cleaned_raw.job_id) 
@@ -88,7 +88,7 @@ SQL_TRANSFORM_LOAD_DWH = """
                 END AS BIGINT
             ) AS raw_salary_numeric,
             
-            job_level, view_count, posted_date, expiry_date, 
+            job_level, posted_date, expiry_date, 
             
             -- LOGIC 3: Trích xuất số năm kinh nghiệm từ chuỗi (Ví dụ: "1 - 3 năm" -> lấy số)
             CASE 
@@ -103,7 +103,6 @@ SQL_TRANSFORM_LOAD_DWH = """
             SELECT 
                 CAST(REPLACE(NULLIF(job_id, ''), '.0', '') AS BIGINT) AS job_id, 
                 job_title, job_url, salary_text, job_level, 
-                CAST(REPLACE(NULLIF(view_count, ''), '.0', '') AS INTEGER) AS view_count, 
                 -- Chuẩn hóa định dạng chuỗi ngày tháng (Date)
                 CASE 
                     WHEN posted_date LIKE '%/%' THEN TO_DATE(posted_date, 'DD/MM/YYYY') 
