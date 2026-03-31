@@ -37,7 +37,6 @@ CREATE TABLE staging.raw_dim_categories (job_id TEXT, category_name TEXT);
 
 -- ==============================================================================
 -- TẦNG 2: DATA WAREHOUSE (Dữ liệu đã chuẩn hóa, tối ưu cho Dashboard)
--- Mô hình: Snowflake Schema (Tối ưu lưu trữ đa trị - Multi-valued Dimensions)
 -- ==============================================================================
 CREATE SCHEMA IF NOT EXISTS dwh;
 
