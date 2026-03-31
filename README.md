@@ -112,7 +112,7 @@ Vietnamworks_Project/
 
 ### Bước 1: Clone Repository
 ```bash
-git clone [https://github.com/AnT2003/Vietnamwork-Project.git](https://github.com/AnT2003/Vietnamwork-Project.git)
+git clone https://github.com/AnT2003/Vietnamwork-Project.git
 cd Vietnamworks_Project
 ```
 
