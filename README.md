@@ -189,8 +189,3 @@ docker exec -it vww_flask_app python dags/master_pipeline.py
 
 ---
 
-## 👨‍💻 Tác giả (Author)
-
-**[Thái Bảo An]** *Data Engineer*
-
-*Nếu bạn thấy dự án này thú vị và hữu ích, đừng quên để lại 1 ⭐️ cho repository nhé!*
